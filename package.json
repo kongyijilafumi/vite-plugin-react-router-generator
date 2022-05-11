@@ -4,9 +4,6 @@
   "description": "A vitejs plugin to use generator react-router",
   "main": "src/index.js",
   "types": "src/index.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "react-router",
     "react",
@@ -14,7 +11,10 @@
     "vite-plugin",
     "vitejs"
   ],
-  "author": "",
+  "author": {
+    "name": "kongyijilafumi",
+    "url": "https://github.com/kongyijilafumi"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^17.0.32",
@@ -24,5 +24,13 @@
     "@babel/core": "^7.17.10",
     "@babel/types": "^7.17.10",
     "chokidar": "^3.5.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kongyijilafumi/vite-plugin-react-router-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kongyijilafumi/vite-plugin-react-router-generator/issues"
+  },
+  "homepage": "https://github.com/kongyijilafumi/vite-plugin-react-router-generator#readme"
 }

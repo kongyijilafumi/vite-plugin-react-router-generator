@@ -1,12 +1,14 @@
 
 export interface Options {
-  KeyWord?: string;
+  outputFile?: string;
   fileDir?: string;
   comKey?: string;
-  outputFile?: string;
-  exts?: string[];
+  KeyWord?: string;
   routerVar?: string;
+  exts?: string[];
   isLazy?: boolean;
+  insertBeforeStr?: string;
+  insertAfterStr?: string;
 }
 
 

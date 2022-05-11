@@ -74,7 +74,7 @@ function getAstString(nodes) {
   return babelc.transformFromAstSync(ast, "", { filename: "test" }).code;
 }
 
-function getRouterInfo(KeyWord, body) {
+function getRouterNodeInfo(KeyWord, body) {
   // 是否有 export default
   const defaultDeclaration = body.find((node) => {
     if (babelt.isExportDefaultDeclaration(node)) {
@@ -90,8 +90,7 @@ function getRouterInfo(KeyWord, body) {
       babelt.isVariableDeclaration(node.declaration) &&
       babelt.isVariableDeclarator(node.declaration.declarations[0]) &&
       KeyWord === node.declaration.declarations[0].id.name &&
-      (babelt.isObjectExpression(node.declaration.declarations[0].init) ||
-        babelt.isArrayExpression(node.declaration.declarations[0].init))
+      babelt.isObjectExpression(node.declaration.declarations[0].init)
     ) {
       return true;
     }
@@ -211,6 +210,8 @@ const Options = {
   outputFile: path.join(process.cwd(), "./src/router.js"),
   exts: [".js", ".jsx", ".tsx", ".ts"],
   routerVar: "routes",
+  insertBeforeStr: "",
+  insertAfterStr: "",
   isLazy: true
 }
 
@@ -253,7 +254,7 @@ function ReactRouterGenerator(o) {
     getCompnentNode(tagName) {
       return getObjectPropty(opt.comKey, getJsxTag(tagName))
     },
-    getRouterInfoExpression(filePath) {
+    setCurrentPageNode(filePath) {
       const str = getString(filePath)
       if (!str) {
         ctx.nodeMap.set(normalizePath(filePath), null)
@@ -265,7 +266,7 @@ function ReactRouterGenerator(o) {
       })
       const { body } = ast.program;
       // fs.writeFileSync("./test.json", JSON.stringify(body))
-      const routerNode = getRouterInfo(opt.KeyWord, body)
+      const routerNode = getRouterNodeInfo(opt.KeyWord, body)
       if (!routerNode) {
         ctx.nodeMap.set(normalizePath(filePath), null)
         return null
@@ -356,7 +357,10 @@ export default ${opt.routerVar}`
         const watchEvent = ["add", "unlink", "change"];
         chokidar.watch([watchFileType], {}).on("all", (eventName, filePath) => {
           if (watchEvent.includes(eventName)) {
-            ctx.getRouterInfoExpression(filePath)
+            const hasNode = ctx.setCurrentPageNode(filePath)
+            if (!hasNode) {
+              return
+            }
             clearTimeout(ctx.timer)
             log("log", `${eventName} ${filePath} 1s后更新路由文件！`)
             ctx.timer = setTimeout(() => {
@@ -367,7 +371,6 @@ export default ${opt.routerVar}`
           }
         })
       })
-
     }
   }
   return {
