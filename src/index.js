@@ -1,9 +1,9 @@
-import * as fs from "fs"
-import * as  path from "path"
-import * as babelc from "@babel/core"
-import * as babelt from "@babel/types"
-import { normalizePath } from "vite"
-import * as chokidar from "chokidar"
+const fs = require("fs")
+const path = require("path")
+const babelt = require("@babel/types")
+const babelc = require("@babel/core")
+const chokidar = require("chokidar")
+const { normalizePath } = require("vite")
 
 
 
@@ -389,5 +389,3 @@ export default ${opt.routerVar}`
 module.exports = ReactRouterGenerator;
 
 ReactRouterGenerator.default = ReactRouterGenerator;
-
-export default ReactRouterGenerator
