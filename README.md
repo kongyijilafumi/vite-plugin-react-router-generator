@@ -44,17 +44,17 @@ declare const ReactRouterGenerator: (options?: Options) => Plugin;
 
 ## options's porperty(配置属性)
 
-| Property        | Type    | Default                                     | Descript                               |
-| --------------- | ------- | ------------------------------------------- | -------------------------------------- |
-| fileDir         | String  | path.join(process.cwd(), "./src/pages")     | 需要从哪个文件夹中提取信息。           |
-| outputFile      | String  | path.join(process.cwd(), "./src/router.js") | 生成路由列表信息的文件路径。           |
-| KeyWord         | String  | "route"                                     | 捕获的路由信息的关键词。               |
-| comKey          | String  | "component"                                 | 导出路由文件的 key。                   |
-| routerVar       | String  | "routes"                                    | 生成文件默认导出的变量名               |
-| exts            | Array   | [".js", ".jsx"]                             | 需要匹配的文件后缀名                   |
-| isLazy          | Boolean | true                                        | 导出的组件是否为懒加载                 |
-| insertBeforeStr | String  | ""                                          | 生成文件的插入字符，插入在列表变量之前 |
-| insertAfterStr  | String  | ""                                          | 生成文件的插入字符，插入在列表变量之后 |
+| Property        | Type    | Default                                      | Descript                               |
+| --------------- | ------- | -------------------------------------------- | -------------------------------------- |
+| fileDir         | String  | path.join(process.cwd(), "./src/pages")      | 需要从哪个文件夹中提取信息。           |
+| outputFile      | String  | path.join(process.cwd(), "./src/router.jsx") | 生成路由列表信息的文件路径。           |
+| KeyWord         | String  | "route"                                      | 捕获的路由信息的关键词。               |
+| comKey          | String  | "component"                                  | 导出路由文件的 key。                   |
+| routerVar       | String  | "routes"                                     | 生成文件默认导出的变量名               |
+| exts            | Array   | [".js", ".jsx", ".tsx"]                      | 需要匹配的文件后缀名                   |
+| isLazy          | Boolean | true                                         | 导出的组件是否为懒加载                 |
+| insertBeforeStr | String  | ""                                           | 生成文件的插入字符，插入在列表变量之前 |
+| insertAfterStr  | String  | ""                                           | 生成文件的插入字符，插入在列表变量之后 |
 
 ### fileDir
 
@@ -63,7 +63,7 @@ declare const ReactRouterGenerator: (options?: Options) => Plugin;
 1. 文件匹配完生成的路由列表
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   { title: "test", path: "/test", component:()=> import(".\\pages\\test.js") },
   // .....
@@ -98,7 +98,7 @@ Test.route = {
 路由文件会自动更新。
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   {
     title: "哈哈哈哈",
@@ -111,7 +111,7 @@ export default routes;
 
 ### outputFile
 
-生成的路由信息文件路径。默认路径：`your project/src/router.js`
+生成的路由信息文件路径。默认路径：`your project/src/router.jsx`
 
 ### KeyWord
 
@@ -168,7 +168,7 @@ export const route = [
 指定生成的导入路由信息的组件 key 值默认：`component`
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   {
     title: "test",
@@ -182,7 +182,7 @@ export default routes;
 当`comKey`为其他值：`page`:
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   { title: "test", path: "/test", page: () => import(".\\pages\\test.js") },
   // ....
@@ -197,7 +197,7 @@ export default routes;
 - 当`routerVar`为：`pages`:
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const pages = [
   { title: "test", path: "/test", page: () => import(".\\pages\\test.js") },
   // ....
@@ -224,7 +224,7 @@ export default pages;
 导出的组件形式是否使用懒加载。默认值：`true`
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   {
     title: "test",
@@ -238,7 +238,7 @@ export default routes;
 - 当 `isLazy` 为 `false`时，会自动帮你导入组件，并且生成 自闭合的 React 组件，标签名称则为：路径名称去掉`./\`且首字母大写。
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 // 本文件为脚本自动生成，请勿修改
 import Pagestestjs from "./pages./test.js";
 
@@ -311,7 +311,7 @@ export const route = {
 生成的文件信息 如下
 
 ```js
-// ./src/router.js
+// ./src/router.jsx
 const routes = [
   {
     path: "/",

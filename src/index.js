@@ -11,25 +11,42 @@ function readDir(path) {
   try {
     return fs.readdirSync(path);
   } catch (error) {
-    console.error("读取文件夹失败", error);
+    log("error", "读取文件夹失败" + error);
     return []
   }
 }
 
+function isExists(filePath) {
+  try {
+    return fs.existsSync(filePath)
+  } catch (error) {
+    log("error", "读取文件夹失败" + error);
+    return false
+  }
+}
+function getNormaPath(filePath = "", isAbsolute = true) {
+  if (isAbsolute) {
+    return normalizePath(filePath)
+  }
+  if (/^(\.(\/|\\)|\.\.(\/|\\))/.test(filePath)) {
+    return normalizePath(filePath)
+  }
+  const concatPath = "." + normalizePath(path.sep) + normalizePath(filePath)
+  return concatPath
+}
 function isFile(path) {
   try {
     return fs.statSync(path).isFile();
   } catch (error) {
-    console.error("获取文件信息失败", error);
+    log("error", "获取文件信息失败" + error);
     return false
   }
 }
-
 function isDir(path) {
   try {
     return fs.statSync(path).isDirectory();
   } catch (error) {
-    console.error("获取文件夹失败", error);
+    log("error", "获取文件夹失败" + error);
     return false
   }
 }
@@ -207,8 +224,8 @@ const Options = {
   KeyWord: "route",
   fileDir: path.join(process.cwd(), "./src/pages"),
   comKey: "component",
-  outputFile: path.join(process.cwd(), "./src/router.js"),
-  exts: [".js", ".jsx", ".tsx", ".ts"],
+  outputFile: path.join(process.cwd(), "./src/router.jsx"),
+  exts: [".js", ".jsx", ".tsx"],
   routerVar: "routes",
   insertBeforeStr: "",
   insertAfterStr: "",
@@ -227,6 +244,7 @@ function ReactRouterGenerator(o) {
     nodeMap: new Map(),
     timer: null,
     isWatch: false,
+    watcher: null,
     mode: "serve",
     readPath(appPath) {
       if (isDir(appPath)) {
@@ -246,7 +264,7 @@ function ReactRouterGenerator(o) {
           [],
           getCallExpression(
             getIdentifierExpression("import"),
-            [getStringExpression(normalizePath(filePath))]
+            [getStringExpression(filePath)]
           )
         )
       )
@@ -257,7 +275,7 @@ function ReactRouterGenerator(o) {
     setCurrentPageNode(filePath) {
       const str = getString(filePath)
       if (!str) {
-        ctx.nodeMap.set(normalizePath(filePath), null)
+        ctx.nodeMap.set(getNormaPath(filePath), null)
         return null
       }
       const ast = babelc.parseSync(str, {
@@ -268,12 +286,12 @@ function ReactRouterGenerator(o) {
       // fs.writeFileSync("./test.json", JSON.stringify(body))
       const routerNode = getRouterNodeInfo(opt.KeyWord, body)
       if (!routerNode) {
-        ctx.nodeMap.set(normalizePath(filePath), null)
+        ctx.nodeMap.set(getNormaPath(filePath), null)
         return null
       }
-      const relative = normalizePath(getRelativePath(opt.outputFile, filePath))
+      const relative = getNormaPath(getRelativePath(opt.outputFile, filePath), false)
       const tagName = getTagName(relative)
-      const componentNode = opt.isLazy ? ctx.getLazyCompnentNode(filePath) : ctx.getCompnentNode(tagName)
+      const componentNode = opt.isLazy ? ctx.getLazyCompnentNode(relative) : ctx.getCompnentNode(tagName)
       const isObjectNode = babelt.isObjectExpression(routerNode)
 
       if (!isObjectNode) {
@@ -286,7 +304,7 @@ function ReactRouterGenerator(o) {
         filePath,
         relative
       }
-      ctx.nodeMap.set(normalizePath(filePath), mapData)
+      ctx.nodeMap.set(getNormaPath(filePath), mapData)
       return routerNode
     },
     getImportStr() {
@@ -346,42 +364,63 @@ export default ${opt.routerVar}`
     },
     watch() {
       return new Promise((resolve) => {
+        console.log(ctx.isWatch);
         if (ctx.isWatch) {
+          console.log(ctx.isWatch);
           return resolve()
         }
         ctx.isWatch = true
+        const hasDir = isExists(opt.fileDir)
+        if (!hasDir) {
+          return resolve()
+        }
+        let fileExtistsNode = false, isResolve = false
         const watchFileType = path.join(
           opt.fileDir,
           `**/*.{${opt.exts.map((i) => i.replace(".", "")).join(",")}}`
         );
+
         const watchEvent = ["add", "unlink", "change"];
-        chokidar.watch([watchFileType], {}).on("all", (eventName, filePath) => {
-          if (watchEvent.includes(eventName)) {
-            const hasNode = ctx.setCurrentPageNode(filePath)
-            if (!hasNode) {
-              return
-            }
-            clearTimeout(ctx.timer)
-            log("log", `${eventName} ${filePath} 1s后更新路由文件！`)
-            ctx.timer = setTimeout(() => {
-              ctx.setNodes()
-              ctx.writeFile()
+        ctx.watcher = chokidar.watch([watchFileType], {}).on("all", (eventName, filePath) => {
+          if (!watchEvent.includes(eventName)) return
+          const hasNode = ctx.setCurrentPageNode(filePath)
+          if (!hasNode) return
+          clearTimeout(ctx.timer)
+          fileExtistsNode = true
+          log("log", `${eventName} ${filePath} 1s后更新路由文件！`)
+          ctx.timer = setTimeout(() => {
+            ctx.setNodes()
+            ctx.writeFile()
+            if (!isResolve) {
+              isResolve = true
               resolve()
-            }, 1000);
-          }
+            }
+          }, 1000);
         })
+        // 超时处理，若1s之后还未发现监听文件 结束 plugin buildStart运行
+        setTimeout(() => {
+          if (!fileExtistsNode) {
+            resolve()
+          }
+        }, 1000)
       })
-    }
+
+    },
   }
   return {
     name: "vite-plugin-react-router-generator",
+    apply(config, { command }) {
+      ctx.mode = command
+      return true
+    },
     async buildStart() {
       process.env.BABEL_ENV = process.env.BABEL_ENV || (ctx.mode === "serve" ? "development" : "production")
       await ctx.watch()
     },
-    apply(config, { command }) {
-      ctx.mode = command
-      return true
+    buildEnd() {
+      if (ctx.watcher && ctx.watcher.close) {
+        ctx.watcher.close()
+      }
     }
   }
 }
