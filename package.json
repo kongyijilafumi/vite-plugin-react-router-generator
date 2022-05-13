@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-react-router-generator",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A vitejs plugin to use generator react-router",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -21,8 +21,8 @@
     "vite": "^2.9.8"
   },
   "dependencies": {
-    "@a8k/babel-preset": "^2.5.4",
-    "@babel/core": "^7.17.10",
+    "@babel/generator": "^7.17.10",
+    "@babel/parser": "^7.17.10",
     "@babel/types": "^7.17.10",
     "chokidar": "^3.5.3"
   },

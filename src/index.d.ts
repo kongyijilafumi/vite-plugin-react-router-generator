@@ -3,7 +3,7 @@ export interface Options {
   outputFile?: string;
   fileDir?: string;
   comKey?: string;
-  KeyWord?: string;
+  keyWord?: string;
   routerVar?: string;
   exts?: string[];
   isLazy?: boolean;

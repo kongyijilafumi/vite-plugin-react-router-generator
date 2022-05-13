@@ -32,7 +32,7 @@ export interface Options {
   outputFile?: string;
   fileDir?: string;
   comKey?: string;
-  KeyWord?: string;
+  keyWord?: string;
   routerVar?: string;
   exts?: string[];
   isLazy?: boolean;
@@ -48,7 +48,7 @@ declare const ReactRouterGenerator: (options?: Options) => Plugin;
 | --------------- | ------- | -------------------------------------------- | -------------------------------------- |
 | fileDir         | String  | path.join(process.cwd(), "./src/pages")      | 需要从哪个文件夹中提取信息。           |
 | outputFile      | String  | path.join(process.cwd(), "./src/router.jsx") | 生成路由列表信息的文件路径。           |
-| KeyWord         | String  | "route"                                      | 捕获的路由信息的关键词。               |
+| keyWord         | String  | "route"                                      | 捕获的路由信息的关键词。               |
 | comKey          | String  | "component"                                  | 导出路由文件的 key。                   |
 | routerVar       | String  | "routes"                                     | 生成文件默认导出的变量名               |
 | exts            | Array   | [".js", ".jsx", ".tsx"]                      | 需要匹配的文件后缀名                   |
@@ -113,7 +113,7 @@ export default routes;
 
 生成的路由信息文件路径。默认路径：`your project/src/router.jsx`
 
-### KeyWord
+### keyWord
 
 告知查找的关键词信息，将会从文件中匹配 暴露出去的关键词获取路由信息,而且路由信息必须为`Object`类型。如下：
 

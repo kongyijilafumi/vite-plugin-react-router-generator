@@ -1,7 +1,8 @@
+const babelt = require("@babel/types")
+const { parse } = require("@babel/parser")
+const generator = require("@babel/generator").default
 const fs = require("fs")
 const path = require("path")
-const babelt = require("@babel/types")
-const babelc = require("@babel/core")
 const chokidar = require("chokidar")
 const { normalizePath } = require("vite")
 
@@ -15,7 +16,6 @@ function readDir(path) {
     return []
   }
 }
-
 function isExists(filePath) {
   try {
     return fs.existsSync(filePath)
@@ -50,16 +50,6 @@ function isDir(path) {
     return false
   }
 }
-function getString(path) {
-  try {
-    if (!fs.existsSync(path)) {
-      return null;
-    }
-    return fs.readFileSync(path, "utf8");
-  } catch (error) {
-    return log("error", error)
-  }
-}
 function getExtName(filePath) {
   return path.extname(filePath)
 }
@@ -76,7 +66,7 @@ function log(type, msg) {
 
 // ast 解析函数
 function getRouterString(nodes, routerVar) {
-  return getAstString([
+  return getAstCodeStr([
     babelt.variableDeclaration("const", [
       babelt.variableDeclarator(
         babelt.identifier(routerVar),
@@ -85,79 +75,7 @@ function getRouterString(nodes, routerVar) {
     ]),
   ])
 }
-
-function getAstString(nodes) {
-  const ast = babelt.file(babelt.program(nodes), "", "")
-  return babelc.transformFromAstSync(ast, "", { filename: "test" }).code;
-}
-
-function getRouterNodeInfo(KeyWord, body) {
-  // 是否有 export default
-  const defaultDeclaration = body.find((node) => {
-    if (babelt.isExportDefaultDeclaration(node)) {
-      defaultName = node.declaration.id ? node.declaration.id.name : null
-      return true;
-    }
-    return false;
-  });
-  // 是否有 `export const ${KeyWord} = {  ...  }`
-  const routesDeclaration = body.find((node) => {
-    if (
-      babelt.isExportNamedDeclaration(node) &&
-      babelt.isVariableDeclaration(node.declaration) &&
-      babelt.isVariableDeclarator(node.declaration.declarations[0]) &&
-      KeyWord === node.declaration.declarations[0].id.name &&
-      babelt.isObjectExpression(node.declaration.declarations[0].init)
-    ) {
-      return true;
-    }
-    return false;
-  });
-  let routerInfoDeclaration;
-  if (routesDeclaration) {
-    routerInfoDeclaration = routesDeclaration.declaration.declarations[0].init
-  } else if (defaultDeclaration) {
-    let name = null;
-    const { declaration } = defaultDeclaration;
-    if (
-      babelt.isFunctionDeclaration(declaration) ||
-      babelt.isClassDeclaration(declaration)
-    ) {
-      name = declaration.id.name;
-    } else if (babelt.isIdentifier(declaration)) {
-      name = declaration.name;
-    }
-    if (!name) {
-      return null;
-    }
-    const currentDefaultRouterInfo = findRouterNode(KeyWord, body, name)
-    if (!currentDefaultRouterInfo) {
-      return null;
-    }
-    routerInfoDeclaration = currentDefaultRouterInfo.expression.right;
-  }
-  return routerInfoDeclaration
-}
-function findRouterNode(KeyWord, body, name) {
-  return body.find((node) => {
-    if (babelt.isExpressionStatement(node)) {
-      const { left } = node.expression;
-      if (
-        babelt.isMemberExpression(left) &&
-        babelt.isIdentifier(left.object)
-      ) {
-        if (
-          left.object.name === name &&
-          babelt.isIdentifier(left.property) &&
-          KeyWord === left.property.name
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
-  });
-}
+// 返回节点 指定的 排序值 默认 0
 function sortNode(node, orderName) {
   if (!node.properties) {
     return 0;
@@ -197,7 +115,6 @@ function getObjectPropty(name, value) {
     value
   );
 }
-
 function getJsxTag(tagName, jsxAttr = [], selfClose = true) {
   return babelt.jsxElement(
     babelt.jsxOpeningElement(
@@ -219,9 +136,101 @@ function getImportDeclaration(defaultName, sourceName) {
   )
 }
 
+function getFileAstNode(filePath) {
+  const str = fs.readFileSync(filePath, "utf-8")
+  if (!str) {
+    return null
+  }
+  try {
+    const { program } = parse(str, {
+      sourceType: "module",
+      plugins: ["jsx", "typescript"]
+    })
+    if (!program.body.length) {
+      return null
+    }
+    return program.body
+  } catch (error) {
+    return null
+  }
+
+}
+function hasExportDefaultNode(node) {
+  const hasDefaultNode = babelt.isExportDefaultDeclaration(node)
+  if (!hasDefaultNode) {
+    return false
+  }
+  const isFn = babelt.isFunctionDeclaration(node.declaration)
+  const isClass = babelt.isClassDeclaration(node.declaration)
+  if ((isFn || isClass) && node.declaration.id) {
+    return node.declaration.id.name
+  }
+  const isIdentifier = babelt.isIdentifier(node.declaration)
+  if (isIdentifier) {
+    return node.declaration.name
+  }
+  return false
+}
+function hasExportNameNode(node, keyWord) {
+  const isExportName = babelt.isExportNamedDeclaration(node)
+  if (!isExportName) {
+    return false
+  }
+  if (node.declaration && node.declaration.declarations) {
+    return node.declaration.declarations.find(declarations => {
+      return declarations.id.name === keyWord && babelt.isObjectExpression(declarations.init)
+    })
+  }
+  return false
+}
+function getDefaultRouteNode(nodes, defaultName, keyWord) {
+  return nodes.find(node => {
+    if (
+      babelt.isExpressionStatement(node) &&
+      node.expression.left &&
+      babelt.isMemberExpression(node.expression.left) &&
+      babelt.isIdentifier(node.expression.left.object) &&
+      node.expression.left.object.name === defaultName &&
+      babelt.isIdentifier(node.expression.left.property) &&
+      node.expression.left.property.name === keyWord
+    ) {
+      return true
+    }
+    return false
+  })
+}
+function getRouteInfoNode(filePath, keyWord) {
+  const astNodes = getFileAstNode(filePath)
+  if (!astNodes) {
+    return null
+  }
+  let defaultName, exportNameNode;
+  astNodes.forEach(node => {
+    if (!defaultName && (defaultName = hasExportDefaultNode(node))) {
+      return
+    }
+    if (!exportNameNode && (exportNameNode = hasExportNameNode(node, keyWord))) {
+      return
+    }
+  })
+  if (exportNameNode) {
+    return exportNameNode.init
+  }
+  if (defaultName) {
+    const defaultNode = getDefaultRouteNode(astNodes, defaultName, keyWord)
+    if (defaultNode) {
+      return defaultNode.expression.right
+    }
+  }
+  return null
+}
+function getAstCodeStr(body) {
+  const { code } = generator({ type: "Program", body })
+  return code
+}
 
 const Options = {
-  KeyWord: "route",
+  keyWord: "route",
   fileDir: path.join(process.cwd(), "./src/pages"),
   comKey: "component",
   outputFile: path.join(process.cwd(), "./src/router.jsx"),
@@ -273,18 +282,7 @@ function ReactRouterGenerator(o) {
       return getObjectPropty(opt.comKey, getJsxTag(tagName))
     },
     setCurrentPageNode(filePath) {
-      const str = getString(filePath)
-      if (!str) {
-        ctx.nodeMap.set(getNormaPath(filePath), null)
-        return null
-      }
-      const ast = babelc.parseSync(str, {
-        filename: filePath,
-        presets: [[require.resolve("@a8k/babel-preset"), { target: "web" }]]
-      })
-      const { body } = ast.program;
-      // fs.writeFileSync("./test.json", JSON.stringify(body))
-      const routerNode = getRouterNodeInfo(opt.KeyWord, body)
+      const routerNode = getRouteInfoNode(filePath, opt.keyWord)
       if (!routerNode) {
         ctx.nodeMap.set(getNormaPath(filePath), null)
         return null
@@ -321,7 +319,7 @@ function ReactRouterGenerator(o) {
         const tagName = getTagName(item.relative)
         return getImportDeclaration(tagName, item.relative)
       })
-      return getAstString(importNode)
+      return getAstCodeStr(importNode)
     },
     getTmpStr(routerStr, importStr) {
       return `// 本文件为脚本自动生成，请勿修改
@@ -364,9 +362,7 @@ export default ${opt.routerVar}`
     },
     watch() {
       return new Promise((resolve) => {
-        console.log(ctx.isWatch);
         if (ctx.isWatch) {
-          console.log(ctx.isWatch);
           return resolve()
         }
         ctx.isWatch = true
