@@ -137,6 +137,10 @@ function getImportDeclaration(defaultName, sourceName) {
 }
 
 function getFileAstNode(filePath) {
+  const hasExist = isExists(filePath)
+  if (!hasExist) {
+    return null
+  }
   const str = fs.readFileSync(filePath, "utf-8")
   if (!str) {
     return null
