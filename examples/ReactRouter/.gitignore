@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
-examples/**/router/list.jsx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
