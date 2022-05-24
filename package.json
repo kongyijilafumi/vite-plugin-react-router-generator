@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "scripts": {
-    "publish": "npm publish"
+    "pub": "npm publish"
   },
   "keywords": [
     "react-router",
