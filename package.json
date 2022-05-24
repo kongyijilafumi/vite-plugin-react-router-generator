@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-react-router-generator",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A vitejs plugin to use generator react-router",
   "main": "src/index.js",
   "types": "src/index.d.ts",

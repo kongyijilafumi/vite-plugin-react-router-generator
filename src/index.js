@@ -8,14 +8,6 @@ const { normalizePath } = require("vite")
 
 
 
-function readDir(path) {
-  try {
-    return fs.readdirSync(path);
-  } catch (error) {
-    log("error", "读取文件夹失败" + error);
-    return []
-  }
-}
 function isExists(filePath) {
   try {
     return fs.existsSync(filePath)
@@ -33,25 +25,6 @@ function getNormaPath(filePath = "", isAbsolute = true) {
   }
   const concatPath = "." + normalizePath(path.sep) + normalizePath(filePath)
   return concatPath
-}
-function isFile(path) {
-  try {
-    return fs.statSync(path).isFile();
-  } catch (error) {
-    log("error", "获取文件信息失败" + error);
-    return false
-  }
-}
-function isDir(path) {
-  try {
-    return fs.statSync(path).isDirectory();
-  } catch (error) {
-    log("error", "获取文件夹失败" + error);
-    return false
-  }
-}
-function getExtName(filePath) {
-  return path.extname(filePath)
 }
 function getRelativePath(form, to) {
   return path.relative(path.dirname(form), to)
@@ -252,24 +225,12 @@ const Options = {
 function ReactRouterGenerator(o) {
   const opt = Object.assign(Options, o)
   const ctx = {
-    files: [],
     nodes: [],
     nodeMap: new Map(),
     timer: null,
     isWatch: false,
     watcher: null,
     mode: "serve",
-    readPath(appPath) {
-      if (isDir(appPath)) {
-        readDir(appPath).forEach((file) =>
-          ctx.readPath(path.join(appPath, file))
-        );
-        return;
-      }
-      if (isFile(appPath) && opt.exts.includes(getExtName(appPath))) {
-        ctx.files.push(appPath);
-      }
-    },
     getLazyCompnentNode(filePath) {
       return getObjectPropty(
         opt.comKey,
@@ -366,10 +327,6 @@ export default ${opt.routerVar}`
     },
     watch() {
       return new Promise((resolve) => {
-        if (ctx.isWatch) {
-          return resolve()
-        }
-        ctx.isWatch = true
         const hasDir = isExists(opt.fileDir)
         if (!hasDir) {
           return resolve()
@@ -384,7 +341,7 @@ export default ${opt.routerVar}`
         ctx.watcher = chokidar.watch([watchFileType], {}).on("all", (eventName, filePath) => {
           if (!watchEvent.includes(eventName)) return
           const hasNode = ctx.setCurrentPageNode(filePath)
-          if (!hasNode) return
+          if (!hasNode && eventName !== "unlink") return
           clearTimeout(ctx.timer)
           fileExtistsNode = true
           log("log", `${eventName} ${filePath} 1s后更新路由文件！`)
@@ -395,7 +352,7 @@ export default ${opt.routerVar}`
               isResolve = true
               resolve()
             }
-          }, 1000);
+          }, 500);
         })
         // 超时处理，若1s之后还未发现监听文件 结束 plugin buildStart运行
         setTimeout(() => {
