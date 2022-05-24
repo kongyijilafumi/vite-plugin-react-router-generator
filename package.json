@@ -4,6 +4,9 @@
   "description": "A vitejs plugin to use generator react-router",
   "main": "src/index.js",
   "types": "src/index.d.ts",
+  "scripts": {
+    "publish": "npm publish"
+  },
   "keywords": [
     "react-router",
     "react",
